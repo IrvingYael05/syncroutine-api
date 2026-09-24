@@ -60,8 +60,8 @@ public class VinculacionService {
         return false;
     }
 
-    // 3. Reloj: Pregunta cómo va su PIN
-    @Transactional(readOnly = true)
+    // 3. Reloj/Móvil: Pregunta cómo va su PIN y recoge los tokens
+    @Transactional
     public VinculacionStatusDto consultarEstado(String pin) {
         Optional<VinculacionReloj> opt = repository.findByPin(pin);
         VinculacionStatusDto dto = new VinculacionStatusDto();
@@ -71,11 +71,13 @@ public class VinculacionService {
             VinculacionReloj vinculacion = opt.get();
             if (vinculacion.getExpiresAt().isBefore(LocalDateTime.now())) {
                 dto.setStatus("EXPIRED");
+                repository.delete(vinculacion);
             } else {
                 dto.setStatus(vinculacion.getStatus());
                 if (vinculacion.getStatus().equals("PAIRED")) {
                     dto.setToken(vinculacion.getToken());
                     dto.setRefreshToken(vinculacion.getRefreshToken());
+                    repository.delete(vinculacion);
                 }
             }
         } else {
